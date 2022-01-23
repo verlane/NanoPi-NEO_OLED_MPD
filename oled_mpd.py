@@ -17,8 +17,8 @@ from PIL import ImageFont
 from PIL import ImageDraw
 
 
-mpd_music_dir	= "/media/"
-title_height	= 18
+mpd_music_dir	= "/mnt/nas/music/"
+title_height	= 15
 scroll_unit		= 3
 
 oled_width		= 128
@@ -29,19 +29,19 @@ cover_size		= oled_height - title_height - 2
 # SH1106  --> 2
 oled_offset_x	= 0
 
-font_title		= ImageFont.truetype('TakaoPGothic.ttf', int(title_height*11/12), encoding='unic')
+font_title		= ImageFont.truetype('NotoSansCJK-Regular.ttc', int(title_height*11/12), encoding='unic')
 #font_title		= ImageFont.truetype('aqua_pfont.ttf', title_height, encoding='unic')
 #font_title		= ImageFont.truetype('MEIRYOB.TTC', int(title_height*10/12), encoding='unic')
 
-font_info		= ImageFont.truetype('TakaoPGothic.ttf', 14, encoding='unic')
+font_info		= ImageFont.truetype('NotoSansCJK-Regular.ttc', 14, encoding='unic')
 #font_info		= ImageFont.truetype('aqua_pfont.ttf', 16, encoding='unic')
 #font_info		= ImageFont.truetype('MEIRYO.TTC', 14, encoding='unic')
 
 font_audio		= ImageFont.load_default()
 
-font_time		= ImageFont.truetype('TakaoPGothic.ttf', 28);
+font_time		= ImageFont.truetype('NotoSansCJK-Regular.ttc', 28);
 #font_time		= ImageFont.truetype('aqua_pfont.ttf', 32);
-font_date		= ImageFont.truetype('TakaoPGothic.ttf', 16);
+font_date		= ImageFont.truetype('NotoSansCJK-Regular.ttc', 16);
 #font_date		= ImageFont.truetype('aqua_pfont.ttf', 18);
 
 
@@ -59,29 +59,29 @@ def receive_signal(signum, stack):
 	soc.recv(mpd_bufsize)
 	
 	if signum == signal.SIGUSR1:
-		print 'K1 pressed'
-		soc.send('previous\n')
+		print('K1 pressed')
+		soc.send(b'previous\n')
 		soc.recv(mpd_bufsize)
 	
 	if signum == signal.SIGUSR2:
-		print 'K2 pressed'
-		soc.send('status\n')
+		print('K2 pressed')
+		soc.send(b'status\n')
 		buff        = soc.recv(mpd_bufsize)
 		state_list  = buff.splitlines()
 		for line in range(0,len(state_list)):
-			if state_list[line].startswith(r"state: "):
-				info_state      = state_list[line].replace(r"state: ", "")
+			if state_str.startswith(r"state: "):
+				info_state      = state_str.replace(r"state: ", "")
 				print(info_state)
 				if info_state == 'play' :
-					soc.send('stop\n')
+					soc.send(b'stop\n')
 					soc.recv(mpd_bufsize)
 				else:
-					soc.send('play\n')
+					soc.send(b'play\n')
 					soc.recv(mpd_bufsize)
 
 	if signum == signal.SIGALRM:
-		print 'K3 pressed'
-		soc.send('next\n')
+		print('K3 pressed')
+		soc.send(b'next\n')
 		soc.recv(mpd_bufsize)
 
 
@@ -90,7 +90,7 @@ signal.signal(signal.SIGUSR2, receive_signal)
 signal.signal(signal.SIGALRM, receive_signal)
 
 
-bus = smbus.SMBus(0)
+bus = smbus.SMBus(1)
 OLED_address     = 0x3c
 OLED_CommandMode = 0x00
 OLED_DataMode    = 0x40
@@ -161,8 +161,8 @@ def oled_drawImage(image):
 	# Grab all the pixels from the image, faster than getpixel.
 	pix		= image.load()
 
-	pages	= oled_height / 8;
-	block	= oled_width / 32;
+	pages	= int(oled_height / 8);
+	block	= int(oled_width / 32);
 
 	for page in range(pages):
 
@@ -255,16 +255,16 @@ def ImageHalftoning_FloydSteinberg(image):
 			#	-		*		7/16
 			#	3/16	5/16	1/16
 			if  (x+1) < cx :
-				tmp[(x+1,y)]	+= e * 7 / 16;
+				tmp[(x+1,y)]	+= int(e * 7 / 16);
 
 			if (y+1) < cy :
 				if 0 <= (x-1) :
-					tmp[(x-1,y+1)]	+= e * 3 / 16;
+					tmp[(x-1,y+1)]	+= int(e * 3 / 16);
 
-				tmp[(x,y+1)]		+= e * 5 / 16;
+				tmp[(x,y+1)]		+= int(e * 5 / 16);
 
 				if (x+1) < cx :
-					tmp[(x+1,y+1)]	+= e * 1 / 16;
+					tmp[(x+1,y+1)]	+= int(e * 1 / 16);
 
 	return	result;
 
@@ -295,7 +295,7 @@ soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 soc.connect((mpd_host, mpd_port))
 soc.recv(mpd_bufsize)
 
-soc.send('commands\n')
+soc.send(b'commands\n')
 rcv = soc.recv(mpd_bufsize)
 print("commands:")
 print("----- start ----------")
@@ -305,7 +305,7 @@ print("----- end ----------\n")
 
 while True:
 
-	soc.send('currentsong\n')
+	soc.send(b'currentsong\n')
 	buff        = soc.recv(mpd_bufsize)
 	song_list   = buff.splitlines()
 
@@ -314,7 +314,7 @@ while True:
 #	print( buff )
 #	print("----- end ----------\n")
 
-	soc.send('status\n')
+	soc.send(b'status\n')
 	buff        = soc.recv(mpd_bufsize)
 	state_list  = buff.splitlines()
 
@@ -333,16 +333,18 @@ while True:
 	info_file       = ""
 
 	for line in range(0,len(state_list)):
-		if state_list[line].startswith("state: "):     info_state      = state_list[line].replace("state: ", "")
-		if state_list[line].startswith("audio: "):     info_audio      = state_list[line].replace("audio: ", "")
-		if state_list[line].startswith("elapsed: "):   info_elapsed    = float(state_list[line].replace("elapsed: ", ""))
-		if state_list[line].startswith("time: "):      info_duration   = float(state_list[line].split(":")[2])
+		state_str = state_list[line].decode('utf-8')
+		if state_str.startswith("state: "):     info_state      = state_str.replace("state: ", "")
+		if state_str.startswith("audio: "):     info_audio      = state_str.replace("audio: ", "")
+		if state_str.startswith("elapsed: "):   info_elapsed    = float(state_str.replace("elapsed: ", ""))
+		if state_str.startswith("time: "):      info_duration   = float(state_str.split(":")[2])
 
 	for line in range(0,len(song_list)):
-		if song_list[line].startswith("file: "):       info_file       = song_list[line].replace("file: ", "")
-		if song_list[line].startswith("Artist: "):     info_artist     = song_list[line].replace("Artist: ", "")
-		if song_list[line].startswith("Album: "):      info_album      = song_list[line].replace("Album: ", "")
-		if song_list[line].startswith("Title: "):      info_title      = song_list[line].replace("Title: ", "")
+		song_str = song_list[line].decode('utf-8')
+		if song_str.startswith("file: "):       info_file       = song_str.replace("file: ", "")
+		if song_str.startswith("Artist: "):     info_artist     = song_str.replace("Artist: ", "")
+		if song_str.startswith("Album: "):      info_album      = song_str.replace("Album: ", "")
+		if song_str.startswith("Title: "):      info_title      = song_str.replace("Title: ", "")
 
 	# clear the image
 	draw.rectangle((0,0,oled_width,oled_height), outline=0, fill=0)
@@ -427,12 +429,12 @@ while True:
 				cover_draw.text(((cover_size-text_x)/2, (cover_size - text_y)/2 ), "NoImage", font=font_audio, fill=255)
 
 			# Generate title image
-			title_width, dmy_y   = font_title.getsize(unicode(info_title,'utf-8'))
+			title_width, dmy_y   = font_title.getsize(info_title)
 			title_offset    = oled_width / 2;
 			title_image     = Image.new('L', (title_width, title_height))
 			title_draw      = ImageDraw.Draw(title_image)
 			title_draw.rectangle((0,0, title_width, title_height), outline=0, fill=0)
-			title_draw.text((0,0), unicode(info_title,'utf-8'), font=font_title, fill=255)
+			title_draw.text((0,0), info_title, font=font_title, fill=255)
 
 		# Title
 		x   = 0
@@ -446,7 +448,7 @@ while True:
 			
 			title_offset    = title_offset - scroll_unit
 	
-		image.paste(title_image, (x,y))
+		image.paste(title_image, (int(x),int(y)))
 		x   = 0;
 	
 		# Current playback position
@@ -461,9 +463,9 @@ while True:
 		# artist name, album name, audio format
 		x   = cover_size + 3;
 		y	+= 1
-		draw.text((x, y), unicode(info_artist,'utf-8'), font=font_info, fill=255)
-		draw.text((x, y + (oled_height - 10 - 1 - y) / 2), unicode(info_album,'utf-8'), font=font_info, fill=255)
-		draw.text((x, oled_height - 10), unicode(info_audio,'utf-8'), font=font_audio, fill=255)
+		draw.text((x, y), info_artist, font=font_info, fill=255)
+		draw.text((x, y + (oled_height - 10 - 1 - y) / 2), info_album, font=font_info, fill=255)
+		draw.text((x, oled_height - 10), info_audio, font=font_audio, fill=255)
 
 	else:
 
