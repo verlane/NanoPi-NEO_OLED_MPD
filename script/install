@@ -1,0 +1,20 @@
+#! /bin/sh
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "=> Installing listener...\n"
+sudo cp oled_mpd.py /usr/local/bin/
+sudo cp oled_mpd_btn.py /usr/local/bin/
+sudo chmod +x /usr/local/bin/oled_mpd.py
+sudo chmod +x /usr/local/bin/oled_mpd_btn.py
+
+echo "=> Starting listener...\n"
+sudo cp oled_mpd.sh /etc/init.d/
+sudo chmod +x /etc/init.d/oled_mpd.sh
+
+sudo update-rc.d oled_mpd.sh defaults
+sudo /etc/init.d/oled_mpd.sh start
+
+echo "listener installed.\n"
